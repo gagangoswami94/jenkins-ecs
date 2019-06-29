@@ -1,0 +1,26 @@
+#!/bin/bash
+SERVICE_NAME=$ECS_SERVICE_NAME
+IMAGE_VERSION="v_"${BUILD_NUMBER}
+TASK_FAMILY="php-app-1"
+
+
+# Create a new task definition for this build
+sed -e "s;%BUILD_NUMBER%;${BUILD_NUMBER};g" php-app.json > php-app-v_${BUILD_NUMBER}.json
+aws ecs register-task-definition --family ${TASK_FAMILY} --cli-input-json file://php-app-v_${BUILD_NUMBER}.json --profile 695292474035_nclouds-devops
+
+
+# Update the service with the new task definition and desired count
+TASK_REVISION=`aws ecs describe-task-definition --task-definition php-app-1 --profile 695292474035_nclouds-devops| egrep "revision" | tr "/" " " | awk '{print $2}' | sed 's/"$//'`
+
+
+
+#DESIRED_COUNT=$(aws ecs describe-services --cluster gagan-jenkins --services ${SERVICE_NAME} --profile 695292474035_nclouds-devops| grep -E "desiredCount" | sort -ut: -k2| awk '{print $2}' | sed 's/,$//')
+
+
+
+DESIRED_COUNT=$DESIRED_TASK_COUNT
+
+
+# Updating Service with new Task Definition
+
+aws ecs update-service --cluster gagan-jenkins --service ${SERVICE_NAME} --task-definition ${TASK_FAMILY}:${TASK_REVISION} --desired-count ${DESIRED_COUNT} --profile 695292474035_nclouds-devops
